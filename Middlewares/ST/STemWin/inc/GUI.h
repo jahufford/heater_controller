@@ -62,6 +62,8 @@ Purpose     : GUI API include file
 extern "C" {     /* Make sure we have C-declarations in C++ programs */
 #endif
 
+extern volatile GUI_TIMER_TIME OS_TimeMS;
+
 /*********************************************************************
 *
 *       Disable string function warning with newer MSVC versions

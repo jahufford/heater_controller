@@ -27,9 +27,9 @@ Full source code is available at: www.segger.com
 
 We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
-File        : GUIConf.h
-Purpose     : Configures emWins abilities, fonts etc.
-----------------------------------------------------------------------
+File        : LCDConf_FlexColor_Template.h
+Purpose     : Display driver configuration file
+---------------------------END-OF-HEADER------------------------------
 */
 
 /**
@@ -50,47 +50,10 @@ Purpose     : Configures emWins abilities, fonts etc.
   *
   ******************************************************************************
   */
- 
-#ifndef GUICONF_H
-#define GUICONF_H
 
-/*********************************************************************
-*
-*       Multi layer/display support
-*/
-#define GUI_NUM_LAYERS            1    // Maximum number of available layers
+#ifndef LCDCONF_H
+#define LCDCONF_H
 
-/*********************************************************************
-*
-*       Multi tasking support
-*/
-#ifdef OS_SUPPORT
- #define GUI_OS                    (1)  // Compile with multitasking support
-#else
- #define GUI_OS                    (0)
-#endif
+#endif /* LCDCONF_H */
 
-/*********************************************************************
-*
-*       Configuration of touch support
-*/
-#ifndef   GUI_SUPPORT_TOUCH
-  #define GUI_SUPPORT_TOUCH       (1)  // Support touchscreen
-#endif
-
-/*********************************************************************
-*
-*       Default font
-*/
-#define GUI_DEFAULT_FONT          &GUI_Font6x8
-
-/*********************************************************************
-*
-*         Configuration of available packages
-*/
-#define GUI_SUPPORT_MOUSE             (1)    /* Support a mouse */
-#define GUI_WINSUPPORT                (1)    /* Use window manager */
-#define GUI_SUPPORT_MEMDEV            (0)    /* Memory device package available */
-#define GUI_SUPPORT_DEVICES           (0)    /* Enable use of device pointers */
-
-#endif  /* Avoid multiple inclusion */
+/*************************** End of file ****************************/
