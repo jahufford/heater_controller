@@ -40,7 +40,7 @@ void SysTick_Handler(void)
 	HAL_SYSTICK_IRQHandler();
 	OS_TimeMS++;
 #ifdef USE_RTOS_SYSTICK
-	//osSystickHandler();
+	osSystickHandler();
 #endif
 }
 

@@ -28,9 +28,13 @@ void SystemClock_Config(void);
 
 void HeartbeatTask(void *ptr)
 {
+	TickType_t xLastWakeTime;
+	xLastWakeTime = xTaskGetTickCount();
+
 	while(1){
 		printf("Hello Heater Controller World\n");
 		vTaskDelay(1000);
+		//vTaskDelayUntil(&xLastWakeTime, 1000);
 	}
 }
 
@@ -294,8 +298,9 @@ int main(void)
     DebugSerialPort_Init(); // now we can use printf
     Button_Init();
 
-    xTaskCreate(HeartbeatTask, "HeartbeatTask",100,0,7,0);
-    xTaskCreate(MainTask, "MainTask", 512,0,5,0);
+    // stack size is given as number of words NOT bytes
+    xTaskCreate(HeartbeatTask, "HeartbeatTask",512,0,2,0);
+    xTaskCreate(MainTask, "MainTask", 512,0,2,0);
 
     vTaskStartScheduler();
 
