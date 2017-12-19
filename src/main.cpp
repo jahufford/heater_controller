@@ -17,6 +17,7 @@
 #include "error.h"
 #include <stdio.h>
 #include "GUI.h"
+#include "queue.h"
 
 void Error_Handler(void);
 void Button_Init(void);
@@ -33,7 +34,8 @@ void HeartbeatTask(void *ptr)
 
 	while(1){
 		printf("Hello Heater Controller World\n");
-		vTaskDelay(1000);
+		vTaskDelay(pdMS_TO_TICKS(1000)); // task delay takes ticks, not milliseconds
+		//xTicksToDelay(pdMS_TO_TICKS(1000));
 		//vTaskDelayUntil(&xLastWakeTime, 1000);
 	}
 }
@@ -247,7 +249,7 @@ static void _cbDialog(WM_MESSAGE * pMsg) {
 *
 *       MainTask
 */
-void MainTask(void *ptr) {
+void GUITask(void *ptr) {
   GUI_Init();
   //
   // Check if recommended memory for the sample is available
@@ -272,7 +274,57 @@ void MainTask(void *ptr) {
   }
 }
 
+QueueHandle_t queue1 = xQueueCreate(1,1);
+QueueHandle_t queue2 = xQueueCreate(1,1);
 
+// keeps from being preempted by another task. But will still be interrupted by interrupts
+auto CriticalSection = [](auto func){
+	vTaskSuspendAll();
+	func();
+	xTaskResumeAll();
+};
+
+void vTask1(void *pvParameters){
+//auto vTask1 = [](void *pvParameters){
+	const char *pcTaskName = "Task 1 is running, received %d \r\n";
+	volatile uint32_t ul;
+	uint8_t signal;
+	uint8_t recv;
+	signal = 1;
+	for(;;){
+		xQueueReceive(queue1,&recv,portMAX_DELAY);
+		CriticalSection([&]{ // we're safe to use default reference capture, since this lambda won't outlive the function
+				printf(pcTaskName,recv);
+		});
+		vTaskDelay(1000);
+		volatile int ret = xQueueSendToBack(queue2,&signal,10);
+		signal++;
+//		taskYIELD();
+//		for(ul=0;ul < 999900; ul++){
+//
+//		}
+	}
+};
+void vTask2(void *pvParameters){
+	const char *pcTaskName = "Task 2 is running, received %d \r\n";
+	volatile uint32_t ul;
+	uint8_t signal = 255;
+	uint8_t recv;
+
+	for(;;){
+		xQueueReceive(queue2,&recv,portMAX_DELAY);
+   		CriticalSection([&]{
+            printf(pcTaskName,recv);
+   		});
+		signal--;
+		vTaskDelay(1000);
+		xQueueSendToBack(queue1,&signal,portMAX_DELAY);
+
+//		for(ul=0;ul < 999900; ul++){
+//
+//		}
+	}
+}
 int main(void)
 {
 	HAL_Init();
@@ -297,19 +349,44 @@ int main(void)
 
     DebugSerialPort_Init(); // now we can use printf
     Button_Init();
-
+    volatile uint32_t ticks_per_ms = pdMS_TO_TICKS(1000);
     // stack size is given as number of words NOT bytes
-    if(xTaskCreate(HeartbeatTask, "HeartbeatTask",512,0,2,0) != pdPASS){
-    	//pd stand for Project Defs
-    	//handle error, check heap status
-    }
-    if(xTaskCreate(MainTask, "MainTask", 512,0,2,0) != pdPASS){
+    // higher priority number is higher priority, it's the opposite of arm interrupt priorities
+//    if(xTaskCreate(HeartbeatTask, "HeartbeatTask",512,0,2,0) != pdPASS){
+//    	//pd stand for Project Defs
+//    	//handle error, check heap status
+//    }
+//    if(xTaskCreate(GUITask, "MainTask", 512,0,0,0) != pdPASS){ // very low priority
+//
+//    }
 
-    }
-
-    vTaskStartScheduler();
-
-    //MainTask(NULL);
+    //queue2 = xQueueCreate(1,1);
+    xTaskCreate(vTask1,"Task 1", 500,NULL,1,NULL);
+    xTaskCreate(vTask2,"Task 2", 500,NULL,1,NULL);
+    // create a task with a lambda. Even something simple is ugly
+    xTaskCreate([](auto data){
+    	for(;;){
+    		CriticalSection([]{
+    				printf("you've been labmda'd\n");
+    		});
+    		vTaskDelay(1000);
+    	}
+    },"Lambda Task",500,NULL,1,NULL);
+    // better to
+    auto lamb = [](auto data){
+    	for(;;){
+            CriticalSection([]{
+              printf("LAMBDA STAMPED\n");
+            });
+            vTaskDelay(5000);
+    	}
+    };
+    volatile BaseType_t ret = xTaskCreate(lamb, "Stamp", 500,NULL,1,NULL);
+//    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
+//    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
+    uint8_t signal = 1;
+    xQueueSendToBack(queue1,&signal,portMAX_DELAY);
+    vTaskStartScheduler(); // we're using the generic scheduler, since configUSE_PORT_OPTIMISED_TASK_SELECTION is undefined
 
 	for(;;);
 }
