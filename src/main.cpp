@@ -351,7 +351,10 @@ int main(void)
 
     DebugSerialPort_Init(); // now we can use printf
     Button_Init();
-    Temperature_HardwareInit();
+    if(!Temperature_HardwareInit()){
+    	asm("nop");
+    }
+
     volatile uint32_t ticks_per_ms = pdMS_TO_TICKS(1000);
     // stack size is given as number of words NOT bytes
     // higher priority number is higher priority, it's the opposite of arm interrupt priorities

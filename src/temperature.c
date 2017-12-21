@@ -42,9 +42,61 @@ ADC_HandleTypeDef  h_gnd_adc;
 // return 1 on success, 0 on failure
 uint8_t Temperature_HardwareInit(void)
 {
-	GPIO_InitTypeDef GPIO_InitStruct;
+//	GPIO_InitTypeDef GPIO_InitStruct;
+//	    __HAL_RCC_GPIOA_CLK_ENABLE();
+//	    __HAL_RCC_GPIOC_CLK_ENABLE();
+//	    __HAL_RCC_GPIOB_CLK_ENABLE();
+//	    // setup GPIO for PWM output
+//	    GPIO_InitTypeDef GPIO_InitStruct2;
+//	//    GPIO_InitStruct2.Pin = GPIO_PIN_15;
+//	//    //GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+//	//    GPIO_InitStruct2.Mode = GPIO_MODE_AF_PP;
+//	//   // GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	//    GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_HIGH;
+//	//    GPIO_InitStruct2.Alternate = GPIO_AF9_TIM12;
+//	//    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct2);
+//	    GPIO_InitStruct2.Pin = GPIO_PIN_15;
+//	    GPIO_InitStruct2.Mode = GPIO_MODE_AF_PP;
+//	    GPIO_InitStruct2.Pull = GPIO_NOPULL;
+//	    //GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_HIGH;
+//	    GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_LOW;
+//	    GPIO_InitStruct2.Alternate = GPIO_AF9_TIM12;
+//	    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct2);
+//
+//	    //__HAL_RCC_TIM12_CLK_ENABLE();
+//
+//	ENABLE_CHARGEPUMP_PWM_TIMER_CLK();
+//	    TIM_HandleTypeDef h_timer;
+//	    TIM_OC_InitTypeDef h_timer_oc_config;
+//	    h_timer.Instance = TIM12;
+//	    h_timer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+//	    h_timer.Init.CounterMode = TIM_COUNTERMODE_UP;
+//	    //h_timer.Init.Period = 0xFFFF; // Max
+//	    //h_timer.Init.Period = 0xFFFF;// Max
+//	    h_timer.Init.Period = 1000;// Max
+//	    h_timer.Init.Prescaler = 2;
+//	    h_timer.State = HAL_TIM_STATE_RESET;
+//	    //h_timer.Channel = HAL_TIM_ACTIVE_CHANNEL_2;
+//
+//	    h_timer_oc_config.OCFastMode = TIM_OCFAST_ENABLE;
+//	    h_timer_oc_config.OCMode = TIM_OCMODE_PWM1;
+//	    h_timer_oc_config.OCNIdleState = TIM_OCNIDLESTATE_SET;
+//	    //h_timer_oc_config.OCNPolarity = TIM_OCNPOLARITY_LOW;
+//	    h_timer_oc_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+//	    //h_timer_oc_config.Pulse = 0xFFFF/2;
+//	    h_timer_oc_config.Pulse = 500;
+//	    HAL_TIM_Base_Init(&h_timer);
+//	    HAL_TIM_PWM_Init(&h_timer);
+//	    //HAL_TIM_Base_Start(&h_timer);
+//		HAL_TIM_PWM_ConfigChannel(&h_timer, &h_timer_oc_config,TIM_CHANNEL_2);
+//	    HAL_TIM_PWM_Start(&h_timer,TIM_CHANNEL_2);
 
+
+//    __HAL_RCC_GPIOA_CLK_ENABLE();
+//    __HAL_RCC_GPIOC_CLK_ENABLE();
+//    __HAL_RCC_GPIOB_CLK_ENABLE();
 	// setup GPIO for PWM output
+    ENABLE_TEMP_PWM_PORT_CLK(); // clock must be enabled before call to HAL_GPIO_INIT
     GPIO_InitTypeDef GPIO_InitStruct2;
     GPIO_InitStruct2.Pin = TEMP_PWM_PIN;
     GPIO_InitStruct2.Mode = GPIO_MODE_AF_PP;
@@ -52,10 +104,10 @@ uint8_t Temperature_HardwareInit(void)
     GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct2.Alternate = GPIO_AF9_TIM12;
     HAL_GPIO_Init(TEMP_PWM_PORT, &GPIO_InitStruct2);
-    ENABLE_TEMP_PWM_PORT();
 
-	ENABLE_CHARGE_PUMP_PWM_TIMER();
-    h_timer.Instance = CHARGE_PUMP_TIMER;
+    // config the timer hardware that the charge pump uses
+	ENABLE_CHARGEPUMP_PWM_TIMER_CLK(); // clock must b enabled before call to HAL_TIM_PWM_INIT()
+    h_timer.Instance = CHARGEPUMP_TIMER;
     h_timer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     h_timer.Init.CounterMode = TIM_COUNTERMODE_UP;
     h_timer.Init.Period = 1000;// Max
@@ -73,6 +125,7 @@ uint8_t Temperature_HardwareInit(void)
     HAL_TIM_PWM_Start(&h_timer,TIM_CHANNEL_2);
 
     // set up a-to-d analog pin
+    GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Pin = TEMP_ADC_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -109,7 +162,7 @@ uint8_t Temperature_HardwareInit(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(TEMP_VIRTUAL_GND_PORT, &GPIO_InitStruct);
-    ENABLE_VIRTUAL_GND_ADC_PORT();
+    ENABLE_VIRTUAL_GND_ADC_PORT_CLK();
 
     ENABLE_VIRTUAL_GND_ADC_CLK();
     h_gnd_adc.Instance = VIRTUAL_GND_ADC;
