@@ -369,22 +369,22 @@ int main(void)
 //    	//pd stand for Project Defs
 //    	//handle error, check heap status
 //    }
-//    if(xTaskCreate(GUITask, "MainTask", 512,0,0,0) != pdPASS){ // very low priority
-//
-//    }
+    if(xTaskCreate(GUITask, "GuiTask", 512,0,0,0) != pdPASS){ // very low priority
+
+    }
 
     //queue2 = xQueueCreate(1,1);
     xTaskCreate(vTask1,"Task 1", 500,NULL,1,NULL);
     xTaskCreate(vTask2,"Task 2", 500,NULL,1,NULL);
     // create a task with a lambda. Even something simple is ugly
-    xTaskCreate([](auto data){
-    	for(;;){
-    		CriticalSection([]{
-    				printf("you've been labmda'd\n");
-    		});
-    		vTaskDelay(1000);
-    	}
-    },"Lambda Task",500,NULL,1,NULL);
+//    xTaskCreate([](auto data){
+//    	for(;;){
+//    		CriticalSection([]{
+//    				printf("you've been labmda'd\n");
+//    		});
+//    		vTaskDelay(1000);
+//    	}
+//    },"Lambda Task",500,NULL,1,NULL);
     // better to
     auto lamb = [](auto data){
     	for(;;){
