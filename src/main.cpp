@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include "GUI.h"
 #include "queue.h"
+#include "timers.h"
 
 void Error_Handler(void);
 void Button_Init(void);
@@ -382,6 +383,10 @@ int main(void)
     	}
     };
     volatile BaseType_t ret = xTaskCreate(lamb, "Stamp", 500,NULL,1,NULL);
+    TimerHandle_t timer = xTimerCreate("Test Timer", pdMS_TO_TICKS(8000),1,0, [](TimerHandle_t xTimer){
+    		printf("From Timer\n");
+    });
+    xTimerStart(timer,0);
 //    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
 //    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
     uint8_t signal = 1;
