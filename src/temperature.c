@@ -8,29 +8,24 @@
 #include "stm32f4xx.h"
 #include "temperature.h"
 /* Definition for USARTx clock resources */
-#define CHARGE_PUMP_TIMER                TIM12
-#define TEMP_ADC                         ADC1
-#define VIRTUAL_GND_ADC                  ADC2
-#define ENABLE_TEMP_ADC_CLK()            __HAL_RCC_ADC1_CLK_ENABLE()
-#define ENABLE_VIRTUAL_GND_ADC_CLK()     __HAL_RCC_ADC2_CLK_ENABLE()
-#define ENABLE_CHARGE_PUMP_PWM_TIMER()   __HAL_RCC_TIM12_CLK_ENABLE()
 
-TIM_HandleTypeDef h_timer;
+
+TIM_HandleTypeDef  h_timer;
 TIM_OC_InitTypeDef h_timer_oc_config;
-ADC_HandleTypeDef h_adc;
-ADC_HandleTypeDef h_gnd_adc;
+ADC_HandleTypeDef  h_adc;
+ADC_HandleTypeDef  h_gnd_adc;
 
 // in order to support negative temperature, the LM35 temperature sensor
 // needs to be able to output a negative voltage relative to its ground.
 // so in order to do that, we've created a virtual ground, by using a diode
 // to create a ~0.6 voltage reference that's connected to the sensor's ground.
 // So negative temperatures are represented from 0 to 0.6V.
-// The 5V is made by using a charge pump driven by a pwm.
-//   _____ 5V              ___ 3.3V
+// The 5.4V is made by using a charge pump driven by a pwm.
+//   _____ 5.4V            ___ 3.3V
 //     |                    |
 //    ---                   |
 //    | |                   \
-//    | |--- temp output    /
+//    | |---- temp output   /
 //    | |                   \
 //    ---                   /
 //     |                    |
@@ -48,6 +43,16 @@ ADC_HandleTypeDef h_gnd_adc;
 uint8_t Temperature_HardwareInit(void)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
+
+	// setup GPIO for PWM output
+    GPIO_InitTypeDef GPIO_InitStruct2;
+    GPIO_InitStruct2.Pin = TEMP_PWM_PIN;
+    GPIO_InitStruct2.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct2.Pull = GPIO_NOPULL;
+    GPIO_InitStruct2.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct2.Alternate = GPIO_AF9_TIM12;
+    HAL_GPIO_Init(TEMP_PWM_PORT, &GPIO_InitStruct2);
+    ENABLE_TEMP_PWM_PORT();
 
 	ENABLE_CHARGE_PUMP_PWM_TIMER();
     h_timer.Instance = CHARGE_PUMP_TIMER;
@@ -67,12 +72,13 @@ uint8_t Temperature_HardwareInit(void)
 	HAL_TIM_PWM_ConfigChannel(&h_timer, &h_timer_oc_config,TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&h_timer,TIM_CHANNEL_2);
 
-    // set up a-to-d
-    GPIO_InitStruct.Pin = GPIO_PIN_1;
+    // set up a-to-d analog pin
+    GPIO_InitStruct.Pin = TEMP_ADC_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(TEMP_ADC_PORT, &GPIO_InitStruct);
+    ENABLE_TEMP_ADC_PORT_CLK();
 
     // main adc for reading the temperature
     ENABLE_TEMP_ADC_CLK();
@@ -98,11 +104,12 @@ uint8_t Temperature_HardwareInit(void)
 
 
     // adc to read the temp sensor's virtual ground
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Pin = TEMP_VIRTUAL_GND_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    HAL_GPIO_Init(TEMP_VIRTUAL_GND_PORT, &GPIO_InitStruct);
+    ENABLE_VIRTUAL_GND_ADC_PORT();
 
     ENABLE_VIRTUAL_GND_ADC_CLK();
     h_gnd_adc.Instance = VIRTUAL_GND_ADC;
@@ -143,11 +150,11 @@ int Temperature_Read()
 	volatile uint32_t temp_min2 = 0xFFFF;
 	volatile uint32_t temp_max = 0;
 	volatile uint32_t temp_max2 = 0;
-	volatile uint32_t gnd_read;
     volatile uint32_t result;
     volatile uint32_t val;
 
     // read temperature several times, throw out 2 highest and 2 lowest, average the rest
+    // we're using 12 bit resolution on the adc
     temp_sum = 0;
 	for(int i=0;i<30;i++){
         if(HAL_ADC_Start(&h_adc)!= HAL_OK){
@@ -181,7 +188,7 @@ int Temperature_Read()
 	temp_sum -= temp_min;
 	temp_sum -= temp_min2;
 	// average the rest of the rest of the samples
-	volatile uint32_t avg = temp_sum/26;
+	volatile uint32_t temp_avg = temp_sum/26;
 
 	gnd_sum =0;
     for(int i=0;i<30;i++){
@@ -193,10 +200,12 @@ int Temperature_Read()
         }
         gnd_sum += HAL_ADC_GetValue(&h_gnd_adc);
     }
-    gnd_read = gnd_sum/30;
+	volatile uint32_t gnd_avg;
+    gnd_avg = gnd_sum/30;
 
     // subtract the virtual ground value from the temperature value
-	int temp_diff = avg - gnd_read;
+	int temp_diff = temp_avg - gnd_avg;
     int temp = (int)((temp_diff/12.412)*9)/5 + 32;
+//    int temp = (int)((temp_diff/7.585)*9)/5 + 32;
     return temp;
 }

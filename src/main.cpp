@@ -385,8 +385,11 @@ int main(void)
     	}
     };
     volatile BaseType_t ret = xTaskCreate(lamb, "Stamp", 500,NULL,1,NULL);
-    TimerHandle_t timer = xTimerCreate("Test Timer", pdMS_TO_TICKS(8000),1,0, [](TimerHandle_t xTimer){
-    		printf("From Timer\n");
+    TimerHandle_t timer = xTimerCreate("Test Timer", pdMS_TO_TICKS(1000),1,0, [](TimerHandle_t xTimer){
+    	int temp = Temperature_Read();
+    	if(temp != TEMP_ERROR){
+    		printf("Temp = %d\n", temp);
+    	}
     });
     xTimerStart(timer,0);
 //    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
