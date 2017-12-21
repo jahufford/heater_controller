@@ -17,6 +17,7 @@
 #include "task.h"
 #include "debug_serial_port.h"
 #include "temperature.h"
+#include "wireless_uart.h"
 #include "error.h"
 #include <stdio.h>
 #include "GUI.h"
@@ -350,9 +351,15 @@ int main(void)
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 
     DebugSerialPort_Init(); // now we can use printf
+
     Button_Init();
+
     if(!Temperature_HardwareInit()){
-    	asm("nop");
+    	Error_Handler();
+    }
+
+    if(!WirelessUart_HardwareInit()){
+    	Error_Handler();
     }
 
     volatile uint32_t ticks_per_ms = pdMS_TO_TICKS(1000);
@@ -388,13 +395,52 @@ int main(void)
     	}
     };
     volatile BaseType_t ret = xTaskCreate(lamb, "Stamp", 500,NULL,1,NULL);
-    TimerHandle_t timer = xTimerCreate("Test Timer", pdMS_TO_TICKS(1000),1,0, [](TimerHandle_t xTimer){
+
+    auto uart_task = [](void *data){
+        char var = 'a';
+    	for(;;){
+    		CriticalSection([var]{
+                printf("Sending %c\n", var);
+                // the call to HAL_UART_Trasmit needs to be in a critical section so it's not interrupted by a task
+                // TODO figuring out the clock thing, does the rtos ticker and hal
+                // ticker work during this function call
+                HAL_UART_Transmit(&UartHandleWireless, (uint8_t*)&var,1,HAL_MAX_DELAY);
+            });
+            var++;
+            if(var=='z'){
+              var = 'a';
+            }
+            vTaskDelay(pdMS_TO_TICKS(1000));
+//    	for(;;){
+//                CriticalSection([]{
+//                  printf("SENDING\n");
+//                });
+//    		vTaskDelay(1000);
+    	}
+    };
+    ret = xTaskCreate(uart_task, "uart",500,NULL,1,NULL);
+
+    TimerHandle_t temp_timer = xTimerCreate("Temp Timer", pdMS_TO_TICKS(1000),1,0, [](TimerHandle_t xTimer){
     	int temp = Temperature_Read();
     	if(temp != TEMP_ERROR){
     		printf("Temp = %d\n", temp);
     	}
     });
-    xTimerStart(timer,0);
+
+    xTimerStart(temp_timer,0);
+
+//    TimerHandle_t wireless_timer = xTimerCreate("Wireless Timer",pdMS_TO_TICKS(1000),1,0,[](TimerHandle_t xTimer){
+//    	static char var = 'a';
+//    	printf("Sending %c\n", var);
+//    	//printf("Hello\n");
+//    	HAL_UART_Transmit(&UartHandleWireless, (uint8_t*)&var,1,0xFFFF);
+//    	var++;
+//    	if(var=='z'){
+//    		var = 'a';
+//    	}
+//    });
+//    xTimerStart(wireless_timer,0);
+
 //    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
 //    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
     uint8_t signal = 1;

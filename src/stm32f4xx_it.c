@@ -173,3 +173,15 @@ void EXTI15_10_IRQHandler(void)
     //HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
     //HAL_UART_Transmit(&UartHandleWireless, (uint8_t*)&var,1,0xFFFF);
 }
+
+void USART2_IRQHandler(void)
+{
+	uint32_t reg;
+	reg = USART2->SR;
+
+	volatile uint8_t data;
+	data = USART2->DR;
+	//has_new_char = 1;
+	//received_char = data;
+	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+}
