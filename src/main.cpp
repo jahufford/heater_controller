@@ -12,13 +12,14 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_nucleo.h"
 #include "FreeRTOS.h"
+#include "queue.h"
+#include "timers.h"
 #include "task.h"
 #include "debug_serial_port.h"
+#include "temperature.h"
 #include "error.h"
 #include <stdio.h>
 #include "GUI.h"
-#include "queue.h"
-#include "timers.h"
 
 void Error_Handler(void);
 void Button_Init(void);
@@ -350,6 +351,7 @@ int main(void)
 
     DebugSerialPort_Init(); // now we can use printf
     Button_Init();
+    Temperature_HardwareInit();
     volatile uint32_t ticks_per_ms = pdMS_TO_TICKS(1000);
     // stack size is given as number of words NOT bytes
     // higher priority number is higher priority, it's the opposite of arm interrupt priorities
