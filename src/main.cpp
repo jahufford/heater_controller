@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include "GUI.h"
 
-void Error_Handler(void);
 void Button_Init(void);
 void SystemClock_Config(void);
 
@@ -362,7 +361,7 @@ int main(void)
     	Error_Handler();
     }
 
-    volatile uint32_t ticks_per_ms = pdMS_TO_TICKS(1000);
+//    volatile uint32_t ticks_per_ms = pdMS_TO_TICKS(1000);
     // stack size is given as number of words NOT bytes
     // higher priority number is higher priority, it's the opposite of arm interrupt priorities
 //    if(xTaskCreate(HeartbeatTask, "HeartbeatTask",512,0,2,0) != pdPASS){
@@ -372,10 +371,10 @@ int main(void)
     if(xTaskCreate(GUITask, "GuiTask", 512,0,0,0) != pdPASS){ // very low priority
 
     }
-
-    //queue2 = xQueueCreate(1,1);
-    xTaskCreate(vTask1,"Task 1", 500,NULL,1,NULL);
-    xTaskCreate(vTask2,"Task 2", 500,NULL,1,NULL);
+//
+//    //queue2 = xQueueCreate(1,1);
+//    xTaskCreate(vTask1,"Task 1", 500,NULL,1,NULL);
+//    xTaskCreate(vTask2,"Task 2", 500,NULL,1,NULL);
     // create a task with a lambda. Even something simple is ugly
 //    xTaskCreate([](auto data){
 //    	for(;;){
@@ -386,15 +385,16 @@ int main(void)
 //    	}
 //    },"Lambda Task",500,NULL,1,NULL);
     // better to
-    auto lamb = [](auto data){
-    	for(;;){
-            CriticalSection([]{
-              printf("LAMBDA STAMPED\n");
-            });
-            vTaskDelay(5000);
-    	}
-    };
-    volatile BaseType_t ret = xTaskCreate(lamb, "Stamp", 500,NULL,1,NULL);
+//    auto lamb = [](auto data){
+//    	for(;;){
+//            CriticalSection([]{
+//              printf("LAMBDA STAMPED\n");
+//            });
+//            vTaskDelay(5000);
+//    	}
+//    };
+    volatile BaseType_t ret;
+//    ret = xTaskCreate(lamb, "Stamp", 500,NULL,1,NULL);
 
     auto uart_task = [](void *data){
         char var = 'a';
@@ -420,14 +420,14 @@ int main(void)
     };
     ret = xTaskCreate(uart_task, "uart",500,NULL,1,NULL);
 
-    TimerHandle_t temp_timer = xTimerCreate("Temp Timer", pdMS_TO_TICKS(1000),1,0, [](TimerHandle_t xTimer){
-    	int temp = Temperature_Read();
-    	if(temp != TEMP_ERROR){
-    		printf("Temp = %d\n", temp);
-    	}
-    });
-
-    xTimerStart(temp_timer,0);
+//    TimerHandle_t temp_timer = xTimerCreate("Temp Timer", pdMS_TO_TICKS(1000),1,0, [](TimerHandle_t xTimer){
+//    	int temp = Temperature_Read();
+//    	if(temp != TEMP_ERROR){
+//    		printf("Temp = %d\n", temp);
+//    	}
+//    });
+//
+//    xTimerStart(temp_timer,0);
 
 //    TimerHandle_t wireless_timer = xTimerCreate("Wireless Timer",pdMS_TO_TICKS(1000),1,0,[](TimerHandle_t xTimer){
 //    	static char var = 'a';
@@ -443,8 +443,8 @@ int main(void)
 
 //    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
 //    xTaskCreate(vTask2,"Task 2", 1000,(void*)queue2,1,NULL);
-    uint8_t signal = 1;
-    xQueueSendToBack(queue1,&signal,portMAX_DELAY);
+//    uint8_t signal = 1;
+//    xQueueSendToBack(queue1,&signal,portMAX_DELAY);
     vTaskStartScheduler(); // we're using the generic scheduler, since configUSE_PORT_OPTIMISED_TASK_SELECTION is undefined
 
 	for(;;);
