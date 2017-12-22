@@ -183,5 +183,19 @@ void USART2_IRQHandler(void)
 	data = USART2->DR;
 	//has_new_char = 1;
 	//received_char = data;
+//	  NVIC_ClearPendingIRQ(USART2_IRQn);
 	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 }
+
+void USART1_IRQHandler(void)
+{
+	uint32_t reg;
+	reg = USART1->SR;
+
+	volatile uint8_t data;
+	data = USART1->DR;
+	//has_new_char = 1;
+	//received_char = data;
+	asm("nop");
+}
+

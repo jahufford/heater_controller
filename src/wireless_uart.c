@@ -14,6 +14,7 @@ uint8_t WirelessUart_HardwareInit(void)
 {
 	//TODO enable port clock, and make defines for everything
 	GPIO_InitTypeDef GPIO_InitStruct;
+	__HAL_RCC_GPIOA_CLK_ENABLE();
 	__HAL_RCC_USART1_CLK_ENABLE();
 	// configure UART to talk to wireless module
 	GPIO_InitStruct.Pin = GPIO_PIN_9;
@@ -44,10 +45,10 @@ uint8_t WirelessUart_HardwareInit(void)
 	    Error_Handler();
 	}
 
-//    USART2->CR1 |= (0x1 << 5); // enable receive interrupt
-//    NVIC_SetPriority(USART2_IRQn, 1);
-//    NVIC_ClearPendingIRQ(USART2_IRQn);
-//    NVIC_EnableIRQ(USART2_IRQn);
+    USART1->CR1 |= (0x1 << 5); // enable receive interrupt
+    NVIC_SetPriority(USART1_IRQn, 1);
+    NVIC_ClearPendingIRQ(USART1_IRQn);
+    NVIC_EnableIRQ(USART1_IRQn);
 
     return 1;
 }
