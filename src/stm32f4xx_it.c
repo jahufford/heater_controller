@@ -199,9 +199,11 @@ void USART1_IRQHandler(void)
 	volatile uint8_t data;
 	data = USART1->DR;
 	xQueueSendToBackFromISR(wireless_queue,&data,&xHigherPriorityTaskWoken);
-	if(xHigherPriorityTaskWoken){
-		taskYIELD();
-	}
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+//  The above line is equivalent to
+//	if(xHigherPriorityTaskWoken){
+//		taskYIELD();
+//	}
 	//has_new_char = 1;
 	//received_char = data;
 	asm("nop");
