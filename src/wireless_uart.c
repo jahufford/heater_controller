@@ -9,6 +9,7 @@
 #include "wireless_uart.h"
 
 UART_HandleTypeDef UartHandleWireless;
+QueueHandle_t wireless_queue;
 // return 1 on success, 0 on failure
 uint8_t WirelessUart_HardwareInit(void)
 {
@@ -46,9 +47,10 @@ uint8_t WirelessUart_HardwareInit(void)
 	}
 
     USART1->CR1 |= (0x1 << 5); // enable receive interrupt
-    NVIC_SetPriority(USART1_IRQn, 1);
+    NVIC_SetPriority(USART1_IRQn, 15);
     NVIC_ClearPendingIRQ(USART1_IRQn);
     NVIC_EnableIRQ(USART1_IRQn);
 
+    wireless_queue = xQueueCreate(1,sizeof(char));
     return 1;
 }

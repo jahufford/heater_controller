@@ -17,6 +17,9 @@
 #include "stm32f4xx_it.h"
 #include "touchscreen.h"
 #include "GUI.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "wireless_uart.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -189,11 +192,16 @@ void USART2_IRQHandler(void)
 
 void USART1_IRQHandler(void)
 {
+	BaseType_t xHigherPriorityTaskWoken =pdFALSE;
 	uint32_t reg;
 	reg = USART1->SR;
 
 	volatile uint8_t data;
 	data = USART1->DR;
+	xQueueSendToBackFromISR(wireless_queue,&data,&xHigherPriorityTaskWoken);
+	if(xHigherPriorityTaskWoken){
+		taskYIELD();
+	}
 	//has_new_char = 1;
 	//received_char = data;
 	asm("nop");

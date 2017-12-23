@@ -48,6 +48,9 @@ void HeartbeatTask(void *ptr)
 #include "FRAMEWIN.h"
 #include "BUTTON.h"
 
+
+QueueHandle_t  temp_queue = xQueueCreate(1,sizeof(int));
+QueueHandle_t sent_queue = xQueueCreate(1,sizeof(char));
 /*********************************************************************
 *
 *       Defines
@@ -59,221 +62,287 @@ void HeartbeatTask(void *ptr)
 //
 #define RECOMMENDED_MEMORY (1024L * 5)
 
-/*********************************************************************
-*
-*       Static data
-*
-**********************************************************************
-*/
-static int _Color;
-static int _Font;
-static int _Pressed;
+///*********************************************************************
+//*
+//*       Static data
+//*
+//**********************************************************************
+//*/
+//static int _Color;
+//static int _Font;
+//static int _Pressed;
+//
+//static const GUI_WIDGET_CREATE_INFO _aDialogCreate[] = {
+//  { FRAMEWIN_CreateIndirect, "Round button sample", 0,      50,  60, 200, 120, FRAMEWIN_CF_MOVEABLE },
+//  { BUTTON_CreateIndirect,   "Button",   GUI_ID_BUTTON0,   100,  10,  80,  80 },
+//  { BUTTON_CreateIndirect,   "Callback", GUI_ID_BUTTON1,    10,  10,  60,  20 },
+//  { BUTTON_CreateIndirect,   "Font",     GUI_ID_BUTTON2,    10,  30,  60,  20 },
+//  { BUTTON_CreateIndirect,   "Color",    GUI_ID_BUTTON3,    10,  50,  60,  20 },
+//  { BUTTON_CreateIndirect,   "Cancel",   GUI_ID_CANCEL,     10,  70,  60,  20 }
+//};
+//
+///*********************************************************************
+//*
+//*       Static functions
+//*
+//**********************************************************************
+//*/
+///*********************************************************************
+//*
+//*       _OnPaint
+//*
+//* Function description
+//*   Paints the owner drawn button
+//*/
+//static void _OnPaint(BUTTON_Handle hObj) {
+//  int Index;
+//  char ac[50];
+//  GUI_RECT Rect;
+//
+//  Index = (WIDGET_GetState(hObj) & BUTTON_STATE_PRESSED) ? 1 : 0;
+//  WM_GetClientRect(&Rect);
+//  //
+//  // Draw filled ellipse with button background color
+//  //
+//  GUI_SetColor(BUTTON_GetBkColor(hObj, Index));
+//  GUI_FillEllipse(Rect.x1 / 2, Rect.y1 / 2, Rect.x1 / 2, Rect.y1 / 2);
+//  //
+//  // Draw black shape
+//  //
+//  GUI_SetColor(GUI_BLACK);
+//  GUI_DrawEllipse(Rect.x1 / 2, Rect.y1 / 2, Rect.x1 / 2, Rect.y1 / 2);
+//  //
+//  // Draw button text with widget attributes
+//  //
+//  GUI_SetColor(BUTTON_GetTextColor(hObj, Index));
+//  GUI_SetBkColor(BUTTON_GetBkColor(hObj, Index));
+//  GUI_SetFont(BUTTON_GetFont(hObj));
+//  BUTTON_GetText(hObj, ac, sizeof(ac));
+//  if (_Pressed) {
+//    strcpy(ac + strlen(ac), "\npressed");
+//  }
+//  GUI_DispStringInRect(ac, &Rect, GUI_TA_HCENTER | GUI_TA_VCENTER);
+//}
+//
+///*********************************************************************
+//*
+//*       _cbButton
+//*
+//* Function description
+//*  1. Calls the owner draw function if the WM_PAINT message has been send
+//*  2. Calls the original callback for further messages
+//*  3. After processing the messages the function evaluates the pressed-state
+//*     if the WM_TOUCH message has been send
+//*/
+//static void _cbButton(WM_MESSAGE * pMsg) {
+//  switch (pMsg->MsgId) {
+//    case WM_PAINT:
+//      _OnPaint(pMsg->hWin);
+//      break;
+//    default:
+//      BUTTON_Callback(pMsg); // The original callback
+//      break;
+//  }
+//  if (pMsg->MsgId == WM_TOUCH) {
+//    if (BUTTON_IsPressed(pMsg->hWin)) {
+//      if (!_Pressed) {
+//        _Pressed = 1;
+//      }
+//    } else {
+//      _Pressed = 0;
+//    }
+//  }
+//}
+//
+///*********************************************************************
+//*
+//*       _cbDialog
+//*
+//* Function description
+//*   Dialog callback routine
+//*/
+//static void _cbDialog(WM_MESSAGE * pMsg) {
+//  int           NCode;
+//  int           Id;
+//  WM_HWIN       hDlg;
+//  BUTTON_Handle hButton;
+//
+//  hDlg = pMsg->hWin;
+//  switch (pMsg->MsgId) {
+//    case WM_PAINT:
+//      WM_DefaultProc(pMsg); // Handle dialog items
+//      //
+//      // After drawing the dialog items add some user drawn items to the window
+//      //
+//      GUI_SetPenSize(10);
+//      GUI_SetColor(GUI_GREEN);
+//      GUI_DrawLine( 95,  5, 185, 95);
+//      GUI_SetColor(GUI_RED);
+//      GUI_DrawLine( 95, 95, 185,  5);
+//      break;
+//    case WM_INIT_DIALOG:
+//      hButton = WM_GetDialogItem(hDlg, GUI_ID_BUTTON0);
+//      WM_SetHasTrans(hButton);              // Set transparency flag for button
+//      break;
+//    case WM_KEY:
+//      switch (((WM_KEY_INFO *)(pMsg->Data.p))->Key) {
+//        case GUI_KEY_ESCAPE:
+//          GUI_EndDialog(hDlg, 1);
+//          break;
+//        case GUI_KEY_ENTER:
+//          GUI_EndDialog(hDlg, 0);
+//          break;
+//      }
+//      break;
+//    case WM_NOTIFY_PARENT:
+//      Id    = WM_GetId(pMsg->hWinSrc);      // Id of widget
+//      NCode = pMsg->Data.v;                 // Notification code
+//      switch (NCode) {
+//        case WM_NOTIFICATION_RELEASED:      // React only if released
+//          hButton = WM_GetDialogItem(hDlg, GUI_ID_BUTTON0);
+//          if (Id == GUI_ID_BUTTON1) {       // Toggle callback
+//            if (WM_GetCallback(hButton) == _cbButton) {
+//              WM_SetCallback(hButton, BUTTON_Callback);
+//            } else {
+//              WM_SetCallback(hButton, _cbButton);
+//            }
+//            WM_InvalidateWindow(hButton);
+//          }
+//          if (Id == GUI_ID_BUTTON2) {       // Toggle font
+//            if (_Font) {
+//              BUTTON_SetFont(hButton, &GUI_Font13_1);
+//            } else {
+//              BUTTON_SetFont(hButton, &GUI_Font8x16);
+//            }
+//            _Font ^= 1;
+//          }
+//          if (Id == GUI_ID_BUTTON3) {       // Toggle color
+//            if (_Color) {
+//              BUTTON_SetBkColor(hButton, 0, 0xaaaaaa);
+//              BUTTON_SetBkColor(hButton, 1, GUI_WHITE);
+//              BUTTON_SetTextColor(hButton, 0, GUI_BLACK);
+//              BUTTON_SetTextColor(hButton, 1, GUI_BLACK);
+//            } else {
+//              BUTTON_SetBkColor(hButton, 0, GUI_BLUE);
+//              BUTTON_SetBkColor(hButton, 1, GUI_RED);
+//              BUTTON_SetTextColor(hButton, 0, GUI_WHITE);
+//              BUTTON_SetTextColor(hButton, 1, GUI_YELLOW);
+//            }
+//            _Color ^= 1;
+//          }
+//          if (Id == GUI_ID_OK) {            // OK Button
+//            GUI_EndDialog(hDlg, 0);
+//          }
+//          if (Id == GUI_ID_CANCEL) {        // Cancel Button
+//            GUI_EndDialog(hDlg, 1);
+//          }
+//          break;
+//      }
+//      break;
+//    default:
+//      WM_DefaultProc(pMsg);
+//  }
+//}
+//
+///*********************************************************************
+//*
+//*       Public code
+//*
+//**********************************************************************
+//*/
+///*********************************************************************
+//*
+//*       MainTask
+//*/
+//void GUITask(void *ptr) {
+//  GUI_Init();
+//  //
+//  // Check if recommended memory for the sample is available
+//  //
+//  if (GUI_ALLOC_GetNumFreeBytes() < RECOMMENDED_MEMORY) {
+//    GUI_ErrorOut("Not enough memory available.");
+//    return;
+//  }
+//  //
+//  // Use memory devices for all windows
+//  //
+//  #if GUI_SUPPORT_MEMDEV
+//    WM_SetCreateFlags(WM_CF_MEMDEV);
+//    WM_EnableMemdev(WM_HBKWIN);
+//  #endif
+//  WM_SetDesktopColor(GUI_GREEN);
+//  while(1) {
+//    _Font = _Color = 0;
+//    GUI_ExecDialogBox(_aDialogCreate, GUI_COUNTOF(_aDialogCreate), &_cbDialog, 0, 0, 0);
+//    taskYIELD();
+//    vTaskDelay(1000);
+//  }
+//}
 
-static const GUI_WIDGET_CREATE_INFO _aDialogCreate[] = {
-  { FRAMEWIN_CreateIndirect, "Round button sample", 0,      50,  60, 200, 120, FRAMEWIN_CF_MOVEABLE },
-  { BUTTON_CreateIndirect,   "Button",   GUI_ID_BUTTON0,   100,  10,  80,  80 },
-  { BUTTON_CreateIndirect,   "Callback", GUI_ID_BUTTON1,    10,  10,  60,  20 },
-  { BUTTON_CreateIndirect,   "Font",     GUI_ID_BUTTON2,    10,  30,  60,  20 },
-  { BUTTON_CreateIndirect,   "Color",    GUI_ID_BUTTON3,    10,  50,  60,  20 },
-  { BUTTON_CreateIndirect,   "Cancel",   GUI_ID_CANCEL,     10,  70,  60,  20 }
-};
+void GUITask(void* ptr)
+{
+	GUI_Init();
 
-/*********************************************************************
-*
-*       Static functions
-*
-**********************************************************************
-*/
-/*********************************************************************
-*
-*       _OnPaint
-*
-* Function description
-*   Paints the owner drawn button
-*/
-static void _OnPaint(BUTTON_Handle hObj) {
-  int Index;
-  char ac[50];
-  GUI_RECT Rect;
+    GUI_SetFont(&GUI_Font8x16);
+    GUI_DispString("Hello world!");
+    GUI_DispDecAt( 27, 20,20,4);
 
-  Index = (WIDGET_GetState(hObj) & BUTTON_STATE_PRESSED) ? 1 : 0;
-  WM_GetClientRect(&Rect);
-  //
-  // Draw filled ellipse with button background color
-  //
-  GUI_SetColor(BUTTON_GetBkColor(hObj, Index));
-  GUI_FillEllipse(Rect.x1 / 2, Rect.y1 / 2, Rect.x1 / 2, Rect.y1 / 2);
-  //
-  // Draw black shape
-  //
-  GUI_SetColor(GUI_BLACK);
-  GUI_DrawEllipse(Rect.x1 / 2, Rect.y1 / 2, Rect.x1 / 2, Rect.y1 / 2);
-  //
-  // Draw button text with widget attributes
-  //
-  GUI_SetColor(BUTTON_GetTextColor(hObj, Index));
-  GUI_SetBkColor(BUTTON_GetBkColor(hObj, Index));
-  GUI_SetFont(BUTTON_GetFont(hObj));
-  BUTTON_GetText(hObj, ac, sizeof(ac));
-  if (_Pressed) {
-    strcpy(ac + strlen(ac), "\npressed");
-  }
-  GUI_DispStringInRect(ac, &Rect, GUI_TA_HCENTER | GUI_TA_VCENTER);
-}
 
-/*********************************************************************
-*
-*       _cbButton
-*
-* Function description
-*  1. Calls the owner draw function if the WM_PAINT message has been send
-*  2. Calls the original callback for further messages
-*  3. After processing the messages the function evaluates the pressed-state
-*     if the WM_TOUCH message has been send
-*/
-static void _cbButton(WM_MESSAGE * pMsg) {
-  switch (pMsg->MsgId) {
-    case WM_PAINT:
-      _OnPaint(pMsg->hWin);
-      break;
-    default:
-      BUTTON_Callback(pMsg); // The original callback
-      break;
-  }
-  if (pMsg->MsgId == WM_TOUCH) {
-    if (BUTTON_IsPressed(pMsg->hWin)) {
-      if (!_Pressed) {
-        _Pressed = 1;
-      }
-    } else {
-      _Pressed = 0;
+//    volatile int x = GUI_IsInitialized();
+    GUI_SetBkColor(GUI_DARKRED);
+    GUI_Clear();
+    asm("nop");
+    //GUI_FillRect(20,20,280,150);
+    //GUI_SetBkColor(GUI_DARKRED);
+    //GUI_SetColor(LCD_MakeColor(GUI_BLUE));
+    GUI_SetColor(GUI_MAKE_COLOR(GUI_RED));
+    uint32_t colors[25] = {GUI_BLUE,GUI_GREEN,GUI_RED, GUI_CYAN,GUI_MAGENTA,GUI_YELLOW,
+    					   GUI_LIGHTBLUE,GUI_LIGHTGREEN,GUI_LIGHTRED,GUI_LIGHTCYAN, GUI_LIGHTMAGENTA,
+						   GUI_LIGHTYELLOW,GUI_DARKBLUE,GUI_DARKGREEN,GUI_DARKRED,GUI_DARKCYAN,
+						   GUI_DARKMAGENTA,GUI_DARKYELLOW,GUI_WHITE,GUI_LIGHTGRAY,GUI_GRAY,
+						   GUI_DARKGRAY,GUI_BLACK,GUI_BROWN,GUI_ORANGE};
+    GUI_SetColor(GUI_WHITE);
+    GUI_DrawRect(0,0,319,239);
+//    uint8_t color_index = 0;
+//    for(int i=10;i<310/2;i+=10){
+//    	GUI_SetColor(colors[color_index]);
+//    	color_index++;
+//    	color_index%=25;
+//    	GUI_DrawRect(i,i,319-i,239-i);
+//    }
+//    GUI_SetColor(GUI_RED);
+//    GUI_FillRect(20,20,80,40);
+//
+//    GUI_SetColor(GUI_BLUE);
+//    GUI_SetBkColor(GUI_GREEN);
+//    GUI_DispCharAt('A',3,200);
+//    GUI_DispStringAt("Hi", (LCD_GetXSize()-100)/2, (LCD_GetYSize()-20)/2);
+//    GUI_SetBkColor(GUI_CYAN);
+//    GUI_DispStringAt("Hello World!", (LCD_GetXSize()-100)/2, 200);
+//    GUI_SetColor(GUI_YELLOW);
+//    GUI_SetFont(GUI_FONT_COMIC24B_1);
+//    GUI_DispStringAt("Hello World!", 95,150);
+    GUI_SetColor(GUI_YELLOW);
+    GUI_SetBkColor(GUI_BLACK);
+//    WM_Exec();
+//    GUI_Exec();
+
+    while(1){
+    	int temp;
+    	if(xQueueReceive(temp_queue,&temp,0) != errQUEUE_EMPTY){
+    		GUI_DispDecAt(temp,50,100,3);
+    	}
+    	char sent_char;
+        if(xQueueReceive(sent_queue,&sent_char,0) != errQUEUE_EMPTY){
+            GUI_DispCharAt(sent_char,50,120);
+        }
+    	char recv_char;
+    	if(xQueueReceive(wireless_queue,&recv_char,0) != errQUEUE_EMPTY){
+    		GUI_DispCharAt(recv_char,50,140);
+    	}
+    	GUI_Exec();
+    	//vTaskDelay(pdMS_TO_TICKS(500));
     }
-  }
-}
-
-/*********************************************************************
-*
-*       _cbDialog
-*
-* Function description
-*   Dialog callback routine
-*/
-static void _cbDialog(WM_MESSAGE * pMsg) {
-  int           NCode;
-  int           Id;
-  WM_HWIN       hDlg;
-  BUTTON_Handle hButton;
-
-  hDlg = pMsg->hWin;
-  switch (pMsg->MsgId) {
-    case WM_PAINT:
-      WM_DefaultProc(pMsg); // Handle dialog items
-      //
-      // After drawing the dialog items add some user drawn items to the window
-      //
-      GUI_SetPenSize(10);
-      GUI_SetColor(GUI_GREEN);
-      GUI_DrawLine( 95,  5, 185, 95);
-      GUI_SetColor(GUI_RED);
-      GUI_DrawLine( 95, 95, 185,  5);
-      break;
-    case WM_INIT_DIALOG:
-      hButton = WM_GetDialogItem(hDlg, GUI_ID_BUTTON0);
-      WM_SetHasTrans(hButton);              // Set transparency flag for button
-      break;
-    case WM_KEY:
-      switch (((WM_KEY_INFO *)(pMsg->Data.p))->Key) {
-        case GUI_KEY_ESCAPE:
-          GUI_EndDialog(hDlg, 1);
-          break;
-        case GUI_KEY_ENTER:
-          GUI_EndDialog(hDlg, 0);
-          break;
-      }
-      break;
-    case WM_NOTIFY_PARENT:
-      Id    = WM_GetId(pMsg->hWinSrc);      // Id of widget
-      NCode = pMsg->Data.v;                 // Notification code
-      switch (NCode) {
-        case WM_NOTIFICATION_RELEASED:      // React only if released
-          hButton = WM_GetDialogItem(hDlg, GUI_ID_BUTTON0);
-          if (Id == GUI_ID_BUTTON1) {       // Toggle callback
-            if (WM_GetCallback(hButton) == _cbButton) {
-              WM_SetCallback(hButton, BUTTON_Callback);
-            } else {
-              WM_SetCallback(hButton, _cbButton);
-            }
-            WM_InvalidateWindow(hButton);
-          }
-          if (Id == GUI_ID_BUTTON2) {       // Toggle font
-            if (_Font) {
-              BUTTON_SetFont(hButton, &GUI_Font13_1);
-            } else {
-              BUTTON_SetFont(hButton, &GUI_Font8x16);
-            }
-            _Font ^= 1;
-          }
-          if (Id == GUI_ID_BUTTON3) {       // Toggle color
-            if (_Color) {
-              BUTTON_SetBkColor(hButton, 0, 0xaaaaaa);
-              BUTTON_SetBkColor(hButton, 1, GUI_WHITE);
-              BUTTON_SetTextColor(hButton, 0, GUI_BLACK);
-              BUTTON_SetTextColor(hButton, 1, GUI_BLACK);
-            } else {
-              BUTTON_SetBkColor(hButton, 0, GUI_BLUE);
-              BUTTON_SetBkColor(hButton, 1, GUI_RED);
-              BUTTON_SetTextColor(hButton, 0, GUI_WHITE);
-              BUTTON_SetTextColor(hButton, 1, GUI_YELLOW);
-            }
-            _Color ^= 1;
-          }
-          if (Id == GUI_ID_OK) {            // OK Button
-            GUI_EndDialog(hDlg, 0);
-          }
-          if (Id == GUI_ID_CANCEL) {        // Cancel Button
-            GUI_EndDialog(hDlg, 1);
-          }
-          break;
-      }
-      break;
-    default:
-      WM_DefaultProc(pMsg);
-  }
-}
-
-/*********************************************************************
-*
-*       Public code
-*
-**********************************************************************
-*/
-/*********************************************************************
-*
-*       MainTask
-*/
-void GUITask(void *ptr) {
-  GUI_Init();
-  //
-  // Check if recommended memory for the sample is available
-  //
-  if (GUI_ALLOC_GetNumFreeBytes() < RECOMMENDED_MEMORY) {
-    GUI_ErrorOut("Not enough memory available.");
-    return;
-  }
-  //
-  // Use memory devices for all windows
-  //
-  #if GUI_SUPPORT_MEMDEV
-    WM_SetCreateFlags(WM_CF_MEMDEV);
-    WM_EnableMemdev(WM_HBKWIN);
-  #endif
-  WM_SetDesktopColor(GUI_GREEN);
-  while(1) {
-    _Font = _Color = 0;
-    GUI_ExecDialogBox(_aDialogCreate, GUI_COUNTOF(_aDialogCreate), &_cbDialog, 0, 0, 0);
-    taskYIELD();
-    vTaskDelay(1000);
-  }
 }
 
 QueueHandle_t queue1 = xQueueCreate(1,1);
@@ -399,6 +468,7 @@ int main(void)
     auto uart_task = [](void *data){
         char var = 'a';
     	for(;;){
+            xQueueSendToBack(sent_queue,&var,10);
     		CriticalSection([var]{
                 printf("Sending %c\n", var);
                 // the call to HAL_UART_Trasmit needs to be in a critical section so it's not interrupted by a task
@@ -411,23 +481,19 @@ int main(void)
               var = 'a';
             }
             vTaskDelay(pdMS_TO_TICKS(1000));
-//    	for(;;){
-//                CriticalSection([]{
-//                  printf("SENDING\n");
-//                });
-//    		vTaskDelay(1000);
     	}
     };
     ret = xTaskCreate(uart_task, "uart",500,NULL,1,NULL);
 
-//    TimerHandle_t temp_timer = xTimerCreate("Temp Timer", pdMS_TO_TICKS(1000),1,0, [](TimerHandle_t xTimer){
-//    	int temp = Temperature_Read();
-//    	if(temp != TEMP_ERROR){
-//    		printf("Temp = %d\n", temp);
-//    	}
-//    });
-//
-//    xTimerStart(temp_timer,0);
+    TimerHandle_t temp_timer = xTimerCreate("Temp Timer", pdMS_TO_TICKS(500),1,0, [](TimerHandle_t xTimer){
+    	int temp = Temperature_Read();
+    	if(temp != TEMP_ERROR){
+    		printf("Temp = %d\n", temp);
+    		xQueueSendToBack(temp_queue,&temp,10);
+    	}
+    });
+
+    xTimerStart(temp_timer,0);
 
 //    TimerHandle_t wireless_timer = xTimerCreate("Wireless Timer",pdMS_TO_TICKS(1000),1,0,[](TimerHandle_t xTimer){
 //    	static char var = 'a';
