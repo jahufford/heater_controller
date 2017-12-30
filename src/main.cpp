@@ -21,7 +21,30 @@
 #include "error.h"
 #include <stdio.h>
 #include "GUI.h"
+#include "BUTTON.h"
+#include "WM.h"
 
+#define WIDGET_ID_BUTTON (GUI_ID_USER + 0)
+WM_CALLBACK *old_cb;
+BUTTON_Handle button;
+void MyCallback(WM_MESSAGE * pMsg)
+{
+	asm("nop");
+	uint32_t bu = (uint32_t)button;
+	if(pMsg->hWin == button)
+	{
+
+        switch(pMsg->MsgId)
+        {
+        default:
+        	old_cb(pMsg);
+            WM_DefaultProc(pMsg);
+        }
+	}else{
+      WM_DefaultProc(pMsg);
+	}
+	asm("nop");
+}
 void Button_Init(void);
 void SystemClock_Config(void);
 
@@ -326,6 +349,12 @@ void GUITask(void* ptr)
     GUI_SetBkColor(GUI_BLACK);
 //    WM_Exec();
 //    GUI_Exec();
+
+    button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
+    BUTTON_SetText(button, "Hello");
+    BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
+
+    old_cb = WM_SetCallback(button, MyCallback);
 
     while(1){
     	int temp;
