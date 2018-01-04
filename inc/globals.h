@@ -9,5 +9,10 @@
 #define GLOBALS_H_
 
 #include "error.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+
+extern QueueHandle_t temp_queue;
+extern QueueHandle_t sent_queue;
 
 #endif /* GLOBALS_H_ */

@@ -18,35 +18,19 @@
 #include "debug_serial_port.h"
 #include "temperature.h"
 #include "wireless_uart.h"
+#include "globals.h"
+#include "display.h"
 #include "error.h"
 #include <stdio.h>
 #include "GUI.h"
 #include "BUTTON.h"
 #include "WM.h"
+#include <functional>
 
-#define WIDGET_ID_BUTTON (GUI_ID_USER + 0)
-WM_CALLBACK *old_cb;
-BUTTON_Handle button;
-void MyCallback(WM_MESSAGE * pMsg)
-{
-	asm("nop");
-	uint32_t bu = (uint32_t)button;
-	if(pMsg->hWin == button)
-	{
-
-        switch(pMsg->MsgId)
-        {
-        default:
-        	old_cb(pMsg);
-            WM_DefaultProc(pMsg);
-        }
-	}else{
-      WM_DefaultProc(pMsg);
-	}
-	asm("nop");
-}
-void Button_Init(void);
+void CRC_Init();
+void Nucleo_Button_Init(void);
 void SystemClock_Config(void);
+void Nucleo_Led_Init(void);
 
 
 #define LD2_Pin GPIO_PIN_5
@@ -72,8 +56,7 @@ void HeartbeatTask(void *ptr)
 #include "BUTTON.h"
 
 
-QueueHandle_t  temp_queue = xQueueCreate(1,sizeof(int));
-QueueHandle_t sent_queue = xQueueCreate(1,sizeof(char));
+
 /*********************************************************************
 *
 *       Defines
@@ -349,29 +332,29 @@ void GUITask(void* ptr)
     GUI_SetBkColor(GUI_BLACK);
 //    WM_Exec();
 //    GUI_Exec();
-
-    button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
-    BUTTON_SetText(button, "Hello");
-    BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
-
-    old_cb = WM_SetCallback(button, MyCallback);
-
-    while(1){
-    	int temp;
-    	if(xQueueReceive(temp_queue,&temp,0) != errQUEUE_EMPTY){
-    		GUI_DispDecAt(temp,50,100,3);
-    	}
-    	char sent_char;
-        if(xQueueReceive(sent_queue,&sent_char,0) != errQUEUE_EMPTY){
-            GUI_DispCharAt(sent_char,50,120);
-        }
-    	char recv_char;
-    	if(xQueueReceive(wireless_queue,&recv_char,0) != errQUEUE_EMPTY){
-    		GUI_DispCharAt(recv_char,50,140);
-    	}
-    	GUI_Exec();
-    	//vTaskDelay(pdMS_TO_TICKS(500));
-    }
+//
+//    button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
+//    BUTTON_SetText(button, "Hello");
+//    BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
+//
+//    old_cb = WM_SetCallback(button, MyCallback);
+//
+//    while(1){
+//    	int temp;
+//    	if(xQueueReceive(temp_queue,&temp,0) != errQUEUE_EMPTY){
+//    		GUI_DispDecAt(temp,50,100,3);
+//    	}
+//    	char sent_char;
+//        if(xQueueReceive(sent_queue,&sent_char,0) != errQUEUE_EMPTY){
+//            GUI_DispCharAt(sent_char,50,120);
+//        }
+//    	char recv_char;
+//    	if(xQueueReceive(wireless_queue,&recv_char,0) != errQUEUE_EMPTY){
+//    		GUI_DispCharAt(recv_char,50,140);
+//    	}
+//    	GUI_Exec();
+//    	//vTaskDelay(pdMS_TO_TICKS(500));
+//    }
 }
 
 QueueHandle_t queue1 = xQueueCreate(1,1);
@@ -430,26 +413,14 @@ int main(void)
 	HAL_Init();
     SystemClock_Config();
 
-    __CRC_CLK_ENABLE();
-    CRC_HandleTypeDef hcrc;
-    hcrc.Instance = CRC;
-    if (HAL_CRC_Init(&hcrc) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = LD2_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+    CRC_Init();
+
     //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 
     DebugSerialPort_Init(); // now we can use printf
 
-    Button_Init();
+    Nucleo_Button_Init();
 
     if(!Temperature_HardwareInit()){
     	Error_Handler();
@@ -459,15 +430,26 @@ int main(void)
     	Error_Handler();
     }
 
-//    volatile uint32_t ticks_per_ms = pdMS_TO_TICKS(1000);
+    temp_queue = xQueueCreate(1,sizeof(int));
+    sent_queue = xQueueCreate(1,sizeof(char));
+
     // stack size is given as number of words NOT bytes
     // higher priority number is higher priority, it's the opposite of arm interrupt priorities
 //    if(xTaskCreate(HeartbeatTask, "HeartbeatTask",512,0,2,0) != pdPASS){
 //    	//pd stand for Project Defs
 //    	//handle error, check heap status
 //    }
-    if(xTaskCreate(GUITask, "GuiTask", 512,0,0,0) != pdPASS){ // very low priority
-
+//    if(xTaskCreate(GUITask, "GuiTask", 512,0,0,0) != pdPASS){ // very low priority
+//
+//    }
+    auto gui_func = [](void *disp){
+    	auto display = static_cast<Display*>(disp);
+    	display->RunDisplay();
+    };
+    // wire up gui task
+    if(xTaskCreate(gui_func,"Gui Task", 512,static_cast<void*>(&display),0,0) != pdPASS)
+    {
+    	// TODO handle error
     }
 //
 //    //queue2 = xQueueCreate(1,1);
@@ -547,7 +529,7 @@ int main(void)
 
 
 // set up the user button on the nucleo and enable it's interrupt
-void Button_Init(void)
+void Nucleo_Button_Init(void)
 {
    	// set up the button
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -573,6 +555,28 @@ void Button_Init(void)
     NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
+
+void Nucleo_Led_Init(void)
+{
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Pin = LD2_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+}
+void CRC_Init()
+{
+	// turn on CRC for STemWin
+    __CRC_CLK_ENABLE();
+    CRC_HandleTypeDef hcrc;
+    hcrc.Instance = CRC;
+    if (HAL_CRC_Init(&hcrc) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
 /**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follows:
