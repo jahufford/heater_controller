@@ -430,6 +430,8 @@ int main(void)
     	Error_Handler();
     }
 
+    Init_Display(); // problem, ticker doesn't tick until scheduler is started
+
     temp_queue = xQueueCreate(1,sizeof(int));
     sent_queue = xQueueCreate(1,sizeof(char));
 
@@ -442,15 +444,15 @@ int main(void)
 //    if(xTaskCreate(GUITask, "GuiTask", 512,0,0,0) != pdPASS){ // very low priority
 //
 //    }
-//    auto gui_func = [](void *disp){
-//    	auto display = static_cast<Display*>(disp);
-//    	display->RunDisplay();
-//    };
-//    // wire up gui task
-//    if(xTaskCreate(gui_func,"Gui Task", 512,static_cast<void*>(&display),0,0) != pdPASS)
-//    {
-//    	// TODO handle error
-//    }
+    auto gui_func = [](void *disp){
+    	auto display = static_cast<Display*>(disp);
+    	display->RunDisplay();
+    };
+    // wire up gui task
+    if(xTaskCreate(gui_func,"Gui Task", 512,static_cast<void*>(display),0,0) != pdPASS)
+    {
+    	// TODO handle error
+    }
 //
 //    //queue2 = xQueueCreate(1,1);
 //    xTaskCreate(vTask1,"Task 1", 500,NULL,1,NULL);

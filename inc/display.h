@@ -13,7 +13,9 @@
 
 class Display;
 
-//extern Display display;
+extern Display* display;
+
+void Init_Display();
 
 class Display
 {
