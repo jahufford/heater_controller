@@ -31,7 +31,7 @@ void CRC_Init();
 void Nucleo_Button_Init(void);
 void SystemClock_Config(void);
 void Nucleo_Led_Init(void);
-
+void Nucleo_Led_Set(bool on);
 
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
@@ -408,10 +408,36 @@ void vTask2(void *pvParameters){
 //		}
 	}
 }
+//uint32_t tickstart = HAL_GetTick();
+//uint32_t wait = Delay;
+//
+///* Add a period to guarantee minimum wait */
+//if (wait < HAL_MAX_DELAY)
+//{
+//   wait++;
+//}
+//volatile uint32_t tt;
+//while(( (tt=HAL_GetTick()) - tickstart) < wait)
+//{
+//	  asm("nop");
+//}
 int main(void)
 {
+	asm("nop");
+
+	portENABLE_INTERRUPTS();
 	HAL_Init();
     SystemClock_Config();
+
+    volatile uint32_t ticks;
+    volatile uint32_t ticks_max=0;
+//    while(1){
+//    	ticks = TIM8->CNT;
+//    	if(ticks>ticks_max){
+//    		ticks_max = ticks;
+//    	}
+//    	asm("nop");
+//    }
 
     CRC_Init();
 
@@ -421,6 +447,29 @@ int main(void)
     DebugSerialPort_Init(); // now we can use printf
 
     Nucleo_Button_Init();
+    Nucleo_Led_Init();
+//
+//    Nucleo_Led_Set(true);
+//    Nucleo_Led_Set(false);
+//
+//    bool led_on = false;
+//    volatile uint32_t tt;
+//    while(1){
+//    	ticks = HAL_GetTick();
+//    	while(1){
+//    		tt = HAL_GetTick();
+//    		if(tt-ticks > 1000){
+//    			asm("nop");
+//    			if(led_on){
+//    				led_on = false;
+//    			}else{
+//    				led_on = true;
+//    			}
+//    			Nucleo_Led_Set(led_on);
+//    			ticks = tt;
+//    		}
+//    	}
+//    }
 
     if(!Temperature_HardwareInit()){
     	Error_Handler();
@@ -430,7 +479,6 @@ int main(void)
     	Error_Handler();
     }
 
-    Init_Display(); // problem, ticker doesn't tick until scheduler is started
 
     temp_queue = xQueueCreate(1,sizeof(int));
     sent_queue = xQueueCreate(1,sizeof(char));
@@ -444,12 +492,17 @@ int main(void)
 //    if(xTaskCreate(GUITask, "GuiTask", 512,0,0,0) != pdPASS){ // very low priority
 //
 //    }
+    portENABLE_INTERRUPTS(); // interrupts keep getting turned of which screws up timers
+    if(display.Init() == false){
+    	// TODO handle error
+    }
     auto gui_func = [](void *disp){
-    	auto display = static_cast<Display*>(disp);
-    	display->RunDisplay();
+//    	auto display = static_cast<Display*>(disp);
+//    	display->RunDisplay();
+    	display.RunDisplay();
     };
     // wire up gui task
-    if(xTaskCreate(gui_func,"Gui Task", 512,static_cast<void*>(display),0,0) != pdPASS)
+    if(xTaskCreate(gui_func,"Gui Task", 512,static_cast<void*>(&display),0,0) != pdPASS)
     {
     	// TODO handle error
     }
@@ -568,6 +621,11 @@ void Nucleo_Led_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 }
+void Nucleo_Led_Set(bool on)
+{
+	GPIO_PinState state = (on==true) ?   GPIO_PIN_SET : GPIO_PIN_RESET;
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, state);
+}
 void CRC_Init()
 {
 	// turn on CRC for STemWin
@@ -647,5 +705,14 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  /**Configure the Systick interrupt time
+   */
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
+   /**Configure the Systick
+   */
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+  /* SysTick_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
 }

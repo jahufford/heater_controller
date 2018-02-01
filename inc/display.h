@@ -13,7 +13,7 @@
 
 class Display;
 
-extern Display* display;
+extern Display display;
 
 void Init_Display();
 
@@ -21,12 +21,14 @@ class Display
 {
 public:
 	Display();
+	bool Init();
 	void RunDisplay();
 	void Paint();
 	void HandleEvents(WM_MESSAGE * pMsg);
 	void ShowStatusBar(bool show_status_bar);
 private:
-	friend void DisplayCallback(WM_MESSAGE * pMsg);
+//	friend void DisplayCallback(WM_MESSAGE * pMsg);
+	static void DisplayCallback(WM_MESSAGE * pMsg);
 	BUTTON_Handle button;
 	bool show_status_bar;
 };

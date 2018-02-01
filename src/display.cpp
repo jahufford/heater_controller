@@ -17,19 +17,19 @@
 #define WIDGET_ID_BUTTON (GUI_ID_USER + 0)
 WM_CALLBACK *old_cb;
 
-
-Display* display;
-uint8_t *display_obj_mem;
-void Init_Display()
+Display display;
+//Display* display;
+//uint8_t *display_obj_mem;
+//void Init_Display()
+//{
+//	display_obj_mem = static_cast<uint8_t*>(pvPortMalloc(sizeof(Display)));
+//	display = new (display_obj_mem) Display;
+//	asm("nop");
+//}
+void Display::DisplayCallback(WM_MESSAGE * pMsg)
 {
-	display_obj_mem = static_cast<uint8_t*>(pvPortMalloc(sizeof(Display)));
-	display = new (display_obj_mem) Display;
 	asm("nop");
-}
-void DisplayCallback(WM_MESSAGE * pMsg)
-{
-	asm("nop");
-	uint32_t bu = (uint32_t)display->button;
+//	uint32_t bu = (uint32_t)display->button;
 //	if(pMsg->hWin == this->button)
 //	{
 //
@@ -47,6 +47,11 @@ void DisplayCallback(WM_MESSAGE * pMsg)
 
 Display::Display()
 {
+	asm("nop");
+}
+bool Display::Init()
+{
+	// use an Init function because the constructor is called before the tickers are started
 	// turn on CRC for STemWin
     __CRC_CLK_ENABLE();
     CRC_HandleTypeDef hcrc;
@@ -57,7 +62,7 @@ Display::Display()
     }
 	GUI_Init();
 
-//    GUI_SetFont(&GUI_Font8x16);
+    GUI_SetFont(&GUI_Font8x16);
 //    GUI_DispString("Hello world!");
 //    GUI_DispDecAt( 27, 20,20,4);
 //
@@ -105,10 +110,8 @@ Display::Display()
     BUTTON_SetText(button, "Hello");
     BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
 
-    old_cb = WM_SetCallback(button, &DisplayCallback);
-
+    old_cb = WM_SetCallback(button, &Display::DisplayCallback);
 }
-
 void Display::RunDisplay()
 {
 	Paint();
@@ -120,7 +123,8 @@ void Display::Paint()
 	{
 
 	}
-
+    GUI_SetFont(&GUI_Font8x16);
+    GUI_DispString("Hello world!");
 
     while(1){
     	int temp;

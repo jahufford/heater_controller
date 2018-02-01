@@ -21,6 +21,8 @@
 #include "queue.h"
 #include "wireless_uart.h"
 
+extern TIM_HandleTypeDef	htim8;
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -39,8 +41,7 @@
   */
 void SysTick_Handler(void)
 {
-	HAL_IncTick();
-	HAL_SYSTICK_IRQHandler();
+	//HAL_SYSTICK_IRQHandler();
 	OS_TimeMS++; // for the GUI
 #ifdef USE_RTOS_SYSTICK
 	osSystickHandler();
@@ -208,4 +209,25 @@ void USART1_IRQHandler(void)
 	//received_char = data;
 	asm("nop");
 }
+void TIM8_BRK_TIM12_IRQHandler(void){
+	asm("nop");
+}
+void TIM8_TRG_COM_TIM14_IRQHandler(void)
+{
+	asm("nop");
+}
+void TIM8_CC_IRQHandler(void)
+{
+	asm("nop");
+}
+void TIM8_UP_TIM13_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 0 */
 
+  /* USER CODE END TIM8_UP_TIM13_IRQn 0 */
+   HAL_IncTick();
+   HAL_TIM_IRQHandler(&htim8);
+  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 1 */
+
+  /* USER CODE END TIM8_UP_TIM13_IRQn 1 */
+}
