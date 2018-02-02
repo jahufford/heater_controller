@@ -29,19 +29,19 @@ Display display;
 void Display::DisplayCallback(WM_MESSAGE * pMsg)
 {
 	asm("nop");
-//	uint32_t bu = (uint32_t)display->button;
-//	if(pMsg->hWin == this->button)
-//	{
-//
-//        switch(pMsg->MsgId)
-//        {
-//        default:
-//        	old_cb(pMsg);
-//            WM_DefaultProc(pMsg);
-//        }
-//	}else{
-//      WM_DefaultProc(pMsg);
-//	}
+	uint32_t bu = (uint32_t)display.button;
+	if(pMsg->hWin == display.button)
+	{
+
+        switch(pMsg->MsgId)
+        {
+        default:
+        	old_cb(pMsg);
+            WM_DefaultProc(pMsg);
+        }
+	}else{
+      WM_DefaultProc(pMsg);
+	}
 	asm("nop");
 }
 
@@ -106,14 +106,16 @@ bool Display::Init()
 ////    WM_Exec();
 ////    GUI_Exec();
 //
-    button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
-    BUTTON_SetText(button, "Hello");
-    BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
 
-    old_cb = WM_SetCallback(button, &Display::DisplayCallback);
+	button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
+	    BUTTON_SetText(button, "Hello");
+	    BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
+	    old_cb = WM_SetCallback(button, &Display::DisplayCallback);
+
 }
 void Display::RunDisplay()
 {
+
 	Paint();
 }
 void Display::Paint()
@@ -125,6 +127,9 @@ void Display::Paint()
 	}
     GUI_SetFont(&GUI_Font8x16);
     GUI_DispString("Hello world!");
+
+    GUI_SetColor(GUI_WHITE);
+    GUI_DrawRect(0,0,319,239);
 
     while(1){
     	int temp;
@@ -139,6 +144,7 @@ void Display::Paint()
     	if(xQueueReceive(wireless_queue,&recv_char,0) != errQUEUE_EMPTY){
     		GUI_DispCharAt(recv_char,50,140);
     	}
+    	WM_Exec();
     	GUI_Exec();
     	//vTaskDelay(pdMS_TO_TICKS(500));
     }
