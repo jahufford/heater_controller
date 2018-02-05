@@ -11,11 +11,12 @@
 #include "FreeRTOS.h"
 #include "globals.h"
 #include <functional>
+#include "main_screen.h"
 
 #include "wireless_uart.h"
+//#include <memory>
 
-#define WIDGET_ID_BUTTON (GUI_ID_USER + 0)
-WM_CALLBACK *old_cb;
+
 
 Display display;
 //Display* display;
@@ -28,23 +29,12 @@ Display display;
 //}
 void Display::DisplayCallback(WM_MESSAGE * pMsg)
 {
-	asm("nop");
-	uint32_t bu = (uint32_t)display.button;
-	if(pMsg->hWin == display.button)
-	{
-
-        switch(pMsg->MsgId)
-        {
-        default:
-        	old_cb(pMsg);
-            WM_DefaultProc(pMsg);
-        }
-	}else{
-      WM_DefaultProc(pMsg);
-	}
-	asm("nop");
+	display.CurrentState()->HandleEvents(pMsg);
 }
-
+DisplayState* Display::CurrentState()
+{
+	return currentDisplayState.get();
+}
 Display::Display()
 {
 	asm("nop");
@@ -63,6 +53,10 @@ bool Display::Init()
 	GUI_Init();
 
     GUI_SetFont(&GUI_Font8x16);
+    currentDisplayState = std::make_unique<MainScreen>();
+    //currentDisplayState.reset(new DisplayState());
+
+  //  currentDisplayState = make_u new MainScreen;
 //    GUI_DispString("Hello world!");
 //    GUI_DispDecAt( 27, 20,20,4);
 //
@@ -107,14 +101,20 @@ bool Display::Init()
 ////    GUI_Exec();
 //
 
-	button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
-	    BUTTON_SetText(button, "Hello");
-	    BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
-	    old_cb = WM_SetCallback(button, &Display::DisplayCallback);
+
 
 }
 void Display::RunDisplay()
 {
+	// one possibility would be put the classic game loop here
+	// paint()
+	// handleevents()
+	// dologic()
+	// changestate()
+	// in order to do that, since handle_events is event driven with a callback,
+	// just have the callback repackage and push the events into a queue from which
+	// this version of handleevents() pulls.
+	// or maybe not
 
 	Paint();
 }
@@ -125,29 +125,8 @@ void Display::Paint()
 	{
 
 	}
-    GUI_SetFont(&GUI_Font8x16);
-    GUI_DispString("Hello world!");
+	currentDisplayState->Paint();
 
-    GUI_SetColor(GUI_WHITE);
-    GUI_DrawRect(0,0,319,239);
-
-    while(1){
-    	int temp;
-    	if(xQueueReceive(temp_queue,&temp,0) != errQUEUE_EMPTY){
-    		GUI_DispDecAt(temp,50,100,3);
-    	}
-    	char sent_char;
-        if(xQueueReceive(sent_queue,&sent_char,0) != errQUEUE_EMPTY){
-            GUI_DispCharAt(sent_char,50,120);
-        }
-    	char recv_char;
-    	if(xQueueReceive(wireless_queue,&recv_char,0) != errQUEUE_EMPTY){
-    		GUI_DispCharAt(recv_char,50,140);
-    	}
-    	WM_Exec();
-    	GUI_Exec();
-    	//vTaskDelay(pdMS_TO_TICKS(500));
-    }
 }
 
 void Display::HandleEvents(WM_MESSAGE * pMsg)

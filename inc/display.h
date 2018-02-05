@@ -10,6 +10,8 @@
 
 #include "WM.h"
 #include "BUTTON.h"
+#include "display_state.h"
+#include <memory>
 
 class Display;
 
@@ -26,10 +28,14 @@ public:
 	void Paint();
 	void HandleEvents(WM_MESSAGE * pMsg);
 	void ShowStatusBar(bool show_status_bar);
-private:
-//	friend void DisplayCallback(WM_MESSAGE * pMsg);
 	static void DisplayCallback(WM_MESSAGE * pMsg);
-	BUTTON_Handle button;
+	DisplayState* CurrentState();
+private:
+	//DisplayState* currentDisplayState;
+	std::unique_ptr<DisplayState> currentDisplayState;
+//	friend void DisplayCallback(WM_MESSAGE * pMsg);
+
+
 	bool show_status_bar;
 };
 
