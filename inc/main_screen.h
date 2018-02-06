@@ -15,7 +15,7 @@
 class MainScreen : public DisplayState
 {
 public:
-	MainScreen();
+	MainScreen(DisplayStates previous_state=DisplayStates::null);
 	virtual ~MainScreen();
 	virtual void Paint();
 	virtual void HandleEvents(WM_MESSAGE * pMsg);

@@ -7,13 +7,12 @@
 
 #include "display_state.h"
 
-DisplayState::DisplayState()
+DisplayState::DisplayState(DisplayStates previous_state)
 {
-
+	this->previous_state = previous_state;
 }
 DisplayState::~DisplayState()
 {
-
 }
 void DisplayState::Paint()
 {

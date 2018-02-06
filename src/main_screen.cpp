@@ -13,7 +13,7 @@
 
 #define WIDGET_ID_BUTTON (GUI_ID_USER + 0)
 
-MainScreen::MainScreen()
+MainScreen::MainScreen(DisplayStates previous_state) : DisplayState(previous_state)
 {
 	button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
     BUTTON_SetText(button, "Hello");
