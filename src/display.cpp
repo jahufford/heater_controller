@@ -116,7 +116,15 @@ void Display::RunDisplay()
 	// this version of handleevents() pulls.
 	// or maybe not
 
-	Paint();
+	//Paint();
+	uint32_t ticks = HAL_GetTick();
+	while(1)
+	{
+		currentDisplayState->HandleEvents(NULL);
+		currentDisplayState->DoLogic(HAL_GetTick() - ticks);
+		currentDisplayState->Paint();
+		ticks = HAL_GetTick();
+	}
 }
 void Display::Paint()
 {

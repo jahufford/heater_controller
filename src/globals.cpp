@@ -9,5 +9,3 @@
 
 QueueHandle_t  temp_queue;
 QueueHandle_t sent_queue;
-
-

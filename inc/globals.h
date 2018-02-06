@@ -14,5 +14,8 @@
 
 extern QueueHandle_t temp_queue;
 extern QueueHandle_t sent_queue;
-
+constexpr TickType_t pdTICKS_TO_MS(TickType_t ticks)
+{
+	return ticks / portTICK_PERIOD_MS;
+}
 #endif /* GLOBALS_H_ */

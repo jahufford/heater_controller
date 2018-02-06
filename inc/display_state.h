@@ -8,6 +8,8 @@
 #ifndef DISPLAY_STATE_H_
 #define DISPLAY_STATE_H_
 
+#include "stm32f4xx.h"
+#include "FreeRTOS.h"
 #include "WM.h"
 
 enum class DisplayStates { null, main_screen, set_temp };
@@ -19,6 +21,8 @@ class DisplayState
 		virtual ~DisplayState();
 		virtual void Paint();
 		virtual void HandleEvents(WM_MESSAGE * pMsg);
+		virtual void DoLogic(TickType_t ticks_elapsed);
+		DisplayStates PreviousState();
     private:
 		DisplayStates previous_state;
 };

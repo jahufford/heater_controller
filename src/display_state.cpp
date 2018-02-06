@@ -22,3 +22,11 @@ void DisplayState::HandleEvents(WM_MESSAGE * pMsg)
 {
 
 }
+void DisplayState::DoLogic(TickType_t ticks_elapsed)
+{
+
+}
+DisplayStates DisplayState::PreviousState()
+{
+	return previous_state;
+}
