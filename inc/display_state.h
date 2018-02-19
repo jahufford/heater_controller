@@ -12,7 +12,7 @@
 #include "FreeRTOS.h"
 #include "WM.h"
 
-enum class DisplayStates { null, main_screen, set_temp };
+enum class DisplayStates { null, exit, main_screen, set_temp, settings, sleep };
 
 class DisplayState
 {

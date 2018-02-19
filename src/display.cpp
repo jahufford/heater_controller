@@ -12,6 +12,8 @@
 #include "globals.h"
 #include <functional>
 #include "main_screen.h"
+#include "set_temp_dstate.h"
+#include "settings_dstate.h"
 
 #include "wireless_uart.h"
 //#include <memory>
@@ -123,6 +125,7 @@ void Display::RunDisplay()
 		currentDisplayState->HandleEvents(NULL);
 		currentDisplayState->DoLogic(HAL_GetTick() - ticks);
 		currentDisplayState->Paint();
+		ChangeState();
 		ticks = HAL_GetTick();
 	}
 }
@@ -145,4 +148,32 @@ void Display::HandleEvents(WM_MESSAGE * pMsg)
 void Display::ShowStatusBar(bool show_status_bar)
 {
 	this->show_status_bar = show_status_bar;
+}
+void Display::SetNextState(DisplayStates new_state)
+{
+	if(next_state != DisplayStates::exit)
+	{
+		next_state = new_state;
+	}
+}
+void Display::ChangeState()
+{
+	if(next_state != DisplayStates::null)
+	{
+		if(next_state != DisplayStates::exit)
+		{
+			switch(next_state)
+			{
+				case DisplayStates::main_screen:
+					currentDisplayState = std::make_unique<MainScreen>();
+				break;
+				case DisplayStates::set_temp:
+					currentDisplayState = std::make_unique<SetTempDState>();
+				break;
+				case DisplayStates::settings:
+					currentDisplayState = std::make_unique<SettingsDState>();
+				break;
+			}
+		}
+	}
 }
