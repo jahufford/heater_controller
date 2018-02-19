@@ -11,7 +11,7 @@
 #include "FreeRTOS.h"
 #include "globals.h"
 #include <functional>
-#include "main_screen.h"
+#include "main_screen_dstate.h"
 #include "set_temp_dstate.h"
 #include "settings_dstate.h"
 
@@ -164,6 +164,7 @@ void Display::ChangeState()
 		{
 			switch(next_state)
 			{
+				// using smart pointers so destructors get called
 				case DisplayStates::main_screen:
 					currentDisplayState = std::make_unique<MainScreen>();
 				break;
