@@ -15,6 +15,9 @@
 
 MainScreen::MainScreen(DisplayStates previous_state) : DisplayState(previous_state)
 {
+	GUI_Clear();
+	WM_HWIN desktop_win = WM_GetDesktopWindow();
+	WM_SetCallback(desktop_win, &Display::DisplayCallback);
 	button= BUTTON_CreateEx(95,75,110,70,NULL, WM_CF_SHOW,0, WIDGET_ID_BUTTON);
     BUTTON_SetText(button, "Hello");
     BUTTON_SetFont(button,GUI_FONT_COMIC24B_1);
@@ -29,6 +32,9 @@ MainScreen::MainScreen(DisplayStates previous_state) : DisplayState(previous_sta
 }
 MainScreen::~MainScreen()
 {
+	WM_DeleteWindow(button);
+	WM_HWIN desktop_win = WM_GetDesktopWindow();
+//	WM_DeleteWindow(desktop_win);
 	asm("nop");
 }
 void MainScreen::Paint()
@@ -68,14 +74,54 @@ void MainScreen::HandleEvents(WM_MESSAGE * pMsg)
         uint32_t bu = (uint32_t)button;
         if(pMsg->hWin == button)
         {
-
               switch(pMsg->MsgId)
               {
+                  case WM_DELETE:
+                      asm("nop");
+            	  break;
+                  case WM_PID_STATE_CHANGED:
+                  {
+
+                      volatile WM_PID_STATE_CHANGED_INFO *p = (WM_PID_STATE_CHANGED_INFO*)pMsg->Data.p;
+                      GUI_PID_STATE *pState = (GUI_PID_STATE*)pMsg->Data.p;
+                      volatile uint32_t x = pState->x;
+                      volatile uint32_t y = pState->y;
+                      volatile bool pressed = pState->Pressed;
+
+                      asm("nop");
+                  }
+                  case WM_TOUCH:
+                  {
+                	  volatile WM_PID_STATE_CHANGED_INFO *p = (WM_PID_STATE_CHANGED_INFO*)pMsg->Data.p;
+                      GUI_PID_STATE *pState = (GUI_PID_STATE*)pMsg->Data.p;
+                      volatile uint32_t x = pState->x;
+                      volatile uint32_t y = pState->y;
+                      volatile bool pressed = pState->Pressed;
+                      if(!pressed)
+                      {
+                        display.SetNextState(DisplayStates::set_temp);
+                      }
+                      asm("nop");
+                  }
+              //break;
               default:
                 old_cb(pMsg);
                   WM_DefaultProc(pMsg);
               }
         }else{
+        	switch(pMsg->MsgId)
+            {
+        		// general touches on the screen that are not on widgets
+            	case WM_TOUCH:
+            	{
+                    GUI_PID_STATE *pState = (GUI_PID_STATE*)pMsg->Data.p;
+                    volatile uint32_t x = pState->x;
+                    volatile uint32_t y = pState->y;
+                    volatile bool pressed = pState->Pressed;
+            		asm("nop");
+            	}
+                break;
+            }
             WM_DefaultProc(pMsg);
         }
         display_dirty = true;
