@@ -37,6 +37,7 @@ private:
 	DisplayState current_state;
 	//DisplayState* currentDisplayState;
 	std::unique_ptr<DisplayState> currentDisplayState;
+	//DisplayState *currentDisplayState;
 //	friend void DisplayCallback(WM_MESSAGE * pMsg);
 
 	bool show_status_bar;
