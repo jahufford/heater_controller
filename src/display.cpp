@@ -167,7 +167,7 @@ void Display::ChangeState()
 				// using smart pointers so destructors get called
 				case DisplayStates::main_screen:
 					currentDisplayState = std::make_unique<MainScreen>();
-		break;
+				break;
 				case DisplayStates::set_temp:
 					currentDisplayState = std::make_unique<SetTempDState>();
 				break;
@@ -177,4 +177,5 @@ void Display::ChangeState()
 			}
 		}
 	}
+	next_state = DisplayStates::null;
 }
